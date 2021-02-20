@@ -3,7 +3,9 @@ const Schema = mongoose.Schema;
 
 const authorSchema = new Schema({
   name: String,
-  age: Number,
+  range: String,
+  nationality: String,
+  birthplace: String
 });
 
 // 存到数据库中后是复数形式

@@ -5,12 +5,16 @@ const { graphqlHTTP } = require('express-graphql');
 const schema = require('./schema/schema');
 const mongoose = require('mongoose');
 // cors
-const cors = require('cors')
+const cors = require('cors');
 
 const app = express();
 
 // 连接到数据库
-mongoose.connect('mongodb://test:test123@localhost:27017/graphql', { useNewUrlParser: true, useUnifiedTopology: true });
+mongoose.connect('mongodb://test:test123@localhost:27017/graphql', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  useFindAndModify: false,
+});
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', () => {
@@ -18,7 +22,7 @@ db.once('open', () => {
 });
 
 //允许跨域访问
-app.use(cors())
+app.use(cors());
 
 // 路由, 访问graphql资源
 app.use(

@@ -5,7 +5,6 @@ const {
   GraphQLString, // 字符串类型
   GraphQLSchema, // schema类型
   GraphQLID, // ID类型
-  GraphQLInt, // 数字类型
   GraphQLNonNull, // 非空限制类
   GraphQLList, // 列表类型
 } = require('graphql');
@@ -14,12 +13,16 @@ const {
 const BookType = new GraphQLObjectType({
   name: 'Book',
   fields: () => ({
-    // 这个对象又哪些属性
+    // 这个对象有哪些属性
     id: { type: GraphQLID },
     name: { type: GraphQLString },
     genre: { type: GraphQLString },
+    time: { type: GraphQLString },
+    size: { type: GraphQLString },
+    // 额外提供的属性
     author: {
       type: AuthorType,
+      // 额外的属性，需要自己提供查询数据的方法
       resolve(parent, args) {
         // 书籍的返回数据中存在属性 authorId
         return Author.findById(parent.authorId);
@@ -31,10 +34,14 @@ const BookType = new GraphQLObjectType({
 const AuthorType = new GraphQLObjectType({
   name: 'Author',
   fields: () => ({
+    // 自带的属性
     id: { type: GraphQLID },
     name: { type: GraphQLString },
-    age: { type: GraphQLInt },
-    books: {
+    range: { type: GraphQLString },
+    nationality: { type: GraphQLString },
+    birthplace: { type: GraphQLString },
+    // 额外提供的属性
+    works: {
       type: new GraphQLList(BookType),
       resolve(parent, args) {
         // 作者的返回数据中，没有 authorId, 只有 本身的ID
@@ -80,7 +87,7 @@ const RootQuery = new GraphQLObjectType({
   },
 });
 
-// 增删改查对象的入口
+// 增删改对象的入口
 const Mutation = new GraphQLObjectType({
   name: 'Mutation',
   fields: {
@@ -88,16 +95,53 @@ const Mutation = new GraphQLObjectType({
       type: AuthorType,
       args: {
         name: { type: new GraphQLNonNull(GraphQLString) }, // 这个new GraphQLNonNull表示参数不能为空
-        age: { type: new GraphQLNonNull(GraphQLInt) },
+        range: { type: new GraphQLNonNull(GraphQLString) },
+        nationality: { type: new GraphQLNonNull(GraphQLString) },
+        birthplace: { type: new GraphQLNonNull(GraphQLString) },
       },
       resolve(parent, args) {
         // 这里的 Author 是模型中定义好的数据库操作对象
         let author = new Author({
           name: args.name,
-          age: args.age,
+          range: args.range,
+          nationality: args.nationality,
+          birthplace: args.birthplace,
         });
         // 保存数据到数据库
         return author.save();
+      },
+    },
+    delAuthor: {
+      type: AuthorType,
+      args: {
+        id: { type: new GraphQLNonNull(GraphQLID) },
+      },
+      resolve(parent, args) {
+        return Author.findByIdAndRemove(args.id);
+      },
+    },
+    editAuthor: {
+      type: AuthorType,
+      args: {
+        id: { type: new GraphQLNonNull(GraphQLID) },
+        name: { type: new GraphQLNonNull(GraphQLString) }, // 这个new GraphQLNonNull表示参数不能为空
+        range: { type: new GraphQLNonNull(GraphQLString) },
+        nationality: { type: new GraphQLNonNull(GraphQLString) },
+        birthplace: { type: new GraphQLNonNull(GraphQLString) },
+      },
+      resolve(parent, args) {
+        return Author.findOneAndUpdate(
+          { _id: args.id },
+          {
+            $set: {
+              name: args.name,
+              range: args.range,
+              nationality: args.nationality,
+              birthplace: args.birthplace,
+            },
+          },
+          { upsert: true },
+        );
       },
     },
     addBook: {
@@ -105,6 +149,8 @@ const Mutation = new GraphQLObjectType({
       args: {
         name: { type: new GraphQLNonNull(GraphQLString) },
         genre: { type: new GraphQLNonNull(GraphQLString) },
+        time: { type: new GraphQLNonNull(GraphQLString) },
+        size: { type: new GraphQLNonNull(GraphQLString) },
         authorId: { type: new GraphQLNonNull(GraphQLID) },
       },
       resolve(parent, args) {
@@ -112,10 +158,47 @@ const Mutation = new GraphQLObjectType({
         let book = new Book({
           name: args.name,
           genre: args.genre,
+          time: args.time,
+          size: args.size,
           authorId: args.authorId,
         });
         // 保存数据到数据库
         return book.save();
+      },
+    },
+    delBook: {
+      type: BookType,
+      args: {
+        id: { type: new GraphQLNonNull(GraphQLID) },
+      },
+      resolve(parent, args) {
+        return Book.findByIdAndRemove(args.id);
+      },
+    },
+    editBook: {
+      type: BookType,
+      args: {
+        id: { type: new GraphQLNonNull(GraphQLID) },
+        name: { type: new GraphQLNonNull(GraphQLString) },
+        genre: { type: new GraphQLNonNull(GraphQLString) },
+        time: { type: new GraphQLNonNull(GraphQLString) },
+        size: { type: new GraphQLNonNull(GraphQLString) },
+        authorId: { type: new GraphQLNonNull(GraphQLID) },
+      },
+      resolve(parent, args) {
+        return Book.findOneAndUpdate(
+          { _id: args.id },
+          {
+            $set: {
+              name: args.name,
+              genre: args.genre,
+              time: args.time,
+              size: args.size,
+              authorId: args.authorId,
+            },
+          },
+          { upsert: true },
+        );
       },
     },
   },
